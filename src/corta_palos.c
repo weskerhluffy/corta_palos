@@ -62,7 +62,6 @@ typedef enum BOOLEANOS {
 #define CACA_COMUN_TIPO_ASSERT CACA_COMUN_ASSERT_DUROTE
 
 #define assert_timeout_dummy(condition) 0;
-//static inline void caca_log_debug_dummy(const char *format, ...) { }
 
 #if CACA_COMUN_TIPO_ASSERT == CACA_COMUN_ASSERT_DUROTE
 #define assert_timeout(condition) assert(condition);
@@ -86,51 +85,12 @@ typedef enum BOOLEANOS {
 		while(0);
 #else
 #define caca_log_debug(formato, args...) 0;
-//#define caca_log_debug caca_log_debug_dummy
 #endif
 
 #define caca_comun_max(x,y) ((x) < (y) ? (y) : (x))
 #define caca_comun_min(x,y) ((x) < (y) ? (x) : (y))
 
 void caca_log_debug_func(const char *format, ...);
-
-#define caca_comun_mapa_bitch_checa(bits, posicion, resultado) \
-        __asm__ (\
-                        "xor %%rdx,%%rdx\n"\
-                        "movq %[bitch_posi],%%rax\n" \
-                        "movq $64,%%r8\n"\
-                        "divq %%r8\n"\
-                        "mov $1,%[resul]\n"\
-                        "mov %%rdx,%%rcx\n"\
-                        "shlq %%cl,%[resul]\n"\
-                        "and (%[vectors],%%rax,8),%[resul]\n"\
-                        : [resul] "=b" (resultado)\
-                        : [bitch_posi] "r" (posicion), [vectors] "r" (bits)\
-            :"rax","rdx","rcx","r8")
-
-static inline void caca_comun_mapa_bitch_asigna(bitch_vector *bits,
-		unsigned long posicion) {
-	int idx_arreglo = 0;
-	int idx_registro = 0;
-
-	idx_arreglo = posicion / 64;
-	idx_registro = posicion % 64;
-
-	bits[idx_arreglo] |= (bitch_vector) ((bitch_vector) 1 << idx_registro);
-
-}
-
-static inline void caca_comun_mapa_bitch_limpia(bitch_vector *bits,
-		unsigned long posicion) {
-	int idx_arreglo = 0;
-	int idx_registro = 0;
-
-	idx_arreglo = posicion / 64;
-	idx_registro = posicion % 64;
-
-	bits[idx_arreglo] &= (bitch_vector) ~((bitch_vector) 1 << idx_registro);
-
-}
 
 void caca_comun_current_utc_time(struct timespec *ts) {
 
@@ -175,17 +135,18 @@ void caca_comun_timestamp(char *stime) {
 	sprintf(parte_milisecundos, "%ld", ms);
 	strcat(stime, parte_milisecundos);
 }
+#ifdef CACA_COMUN_LOG
 void caca_log_debug_func(const char *format, ...) {
 
 	va_list arg;
 	va_list arg2;
 	const char *PEDAZO_TIMESTAMP_HEADER = "tiempo: %s; ";
 	const char *HEADER =
-			"archivo: %s; funcion: %s; linea %d; nivel: %zd caca 8====D ";
+	"archivo: %s; funcion: %s; linea %d; nivel: %zd caca 8====D ";
 	char formato[CACA_LOG_MAX_TAM_CADENA + sizeof(HEADER)
-			+ sizeof(PEDAZO_TIMESTAMP_HEADER)] = { '\0' };
-	char pedazo_timestamp[sizeof(PEDAZO_TIMESTAMP_HEADER) + 100] = { '\0' };
-	char cadena_timestamp[100] = { '\0' };
+	+ sizeof(PEDAZO_TIMESTAMP_HEADER)] = {'\0'};
+	char pedazo_timestamp[sizeof(PEDAZO_TIMESTAMP_HEADER) + 100] = {'\0'};
+	char cadena_timestamp[100] = {'\0'};
 
 	caca_comun_timestamp(cadena_timestamp);
 	sprintf(pedazo_timestamp, PEDAZO_TIMESTAMP_HEADER, cadena_timestamp);
@@ -200,9 +161,9 @@ void caca_log_debug_func(const char *format, ...) {
 	vprintf(formato, arg2);
 	va_end(arg2);
 	va_end(arg);
-// XXX: http://stackoverflow.com/questions/1716296/why-does-printf-not-flush-after-the-call-unless-a-newline-is-in-the-format-strin
 	setbuf(stdout, NULL);
 }
+#endif
 
 #ifdef CACA_COMUN_LOG
 static char *caca_comun_arreglo_a_cadena(tipo_dato *arreglo, int tam_arreglo,
@@ -261,9 +222,8 @@ void caca_comun_strreplace(char s[], char chr, char repl_chr) {
 	}
 }
 
-static inline int caca_comun_lee_matrix_long_stdin(tipo_dato *matrix,
-
-int *num_filas, int *num_columnas, int num_max_filas, int num_max_columnas) {
+static int caca_comun_lee_matrix_long_stdin(tipo_dato *matrix, int *num_filas,
+		int *num_columnas, int num_max_filas, int num_max_columnas) {
 	int indice_filas = 0;
 	int indice_columnas = 0;
 	tipo_dato numero = 0;
@@ -284,17 +244,13 @@ int *num_filas, int *num_columnas, int num_max_filas, int num_max_columnas) {
 		}
 		for (siguiente_cadena_numero = linea;; siguiente_cadena_numero =
 				cadena_numero_actual) {
-//			caca_log_debug("el numero raw %s", linea);
 			numero = strtol(siguiente_cadena_numero, &cadena_numero_actual, 10);
 			if (cadena_numero_actual == siguiente_cadena_numero) {
 				break;
 			}
 			*(matrix + indice_filas * num_max_columnas + indice_columnas) =
 					numero;
-//			caca_log_debug("en col %d, fil %d, el valor %lu", indice_columnas,
-//					indice_filas, numero);
 			indice_columnas++;
-//			caca_log_debug("las columnas son %d", indice_columnas);
 		}
 		if (num_columnas) {
 			num_columnas[indice_filas] = indice_columnas;
@@ -316,29 +272,30 @@ tipo_dato numeros[CORTA_PALOS_MAX_NUMS + 2] = { 0 };
 tipo_dato matrix_chostos[CORTA_PALOS_MAX_NUMS + 2][CORTA_PALOS_MAX_NUMS + 2] = {
 		0 };
 
-static inline tipo_dato corta_palos_core(tipo_dato *cortes_webos,
-		natural numeros_tam) {
+static tipo_dato corta_palos_core(tipo_dato *cortes_webos, natural numeros_tam) {
 	tipo_dato chosto_min = 0;
+	natural i, j, l;
 
-	for (natural i = 0; i < 2; i++) {
-		for (natural j = 0; j < numeros_tam - i; j++) {
+	assert_timeout(numeros_tam<=CORTA_PALOS_MAX_NUMS+2);
+	for (i = 0; i < 2; i++) {
+		for (j = 0; j < numeros_tam - i; j++) {
 			natural k = j + i;
 			matrix_chostos[j][k] = 0;
 		}
 	}
 
-	for (natural i = 2; i < 3; i++) {
-		for (natural j = 0; j < numeros_tam - i; j++) {
+	for (i = 2; i < 3; i++) {
+		for (j = 0; j < numeros_tam - i; j++) {
 			natural k = j + i;
 			matrix_chostos[j][k] = numeros[k] - numeros[j];
 		}
 	}
 
-	for (natural i = 3; i < numeros_tam; i++) {
-		for (natural j = 0; j < numeros_tam - i; j++) {
+	for (i = 3; i < numeros_tam; i++) {
+		for (j = 0; j < numeros_tam - i; j++) {
 			natural k = j + i;
 			tipo_dato minimo_chosto = UINT_MAX;
-			for (natural l = j + 1; l < k; l++) {
+			for (l = j + 1; l < k; l++) {
 				if (minimo_chosto
 						> matrix_chostos[j][l] + matrix_chostos[l][k]) {
 					minimo_chosto = matrix_chostos[j][l] + matrix_chostos[l][k];
@@ -353,20 +310,30 @@ static inline tipo_dato corta_palos_core(tipo_dato *cortes_webos,
 	return chosto_min;
 }
 
-static inline void corta_palos_main() {
+static void corta_palos_main() {
 	natural longitud_palote = 0;
 	natural numero_cortes_webos = 0;
-	scanf("%u\n", &longitud_palote);
-
-	while (longitud_palote) {
-		scanf("%u\n", &numero_cortes_webos);
+	while (1) {
+		scanf("%u", &longitud_palote);
+		if (!longitud_palote) {
+			break;
+		}
+		scanf("%u", &numero_cortes_webos);
+		assert_timeout(numero_cortes_webos<=CORTA_PALOS_MAX_NUMS);
 
 		caca_log_debug("tam palo %u num cortes %u", longitud_palote,
 				numero_cortes_webos);
 		caca_log_debug("longitud del palo %u", longitud_palote);
 
+		natural mierda = 0;
+		while (mierda < numero_cortes_webos) {
+			scanf("%u", numeros + mierda + 1);
+			mierda++;
+		}
+#if 0
 		caca_comun_lee_matrix_long_stdin((tipo_dato *) numeros + 1,
-				&(int ) { 0 }, NULL, 1, numero_cortes_webos);
+				&(int ) {0}, NULL, 1, numero_cortes_webos);
+#endif
 
 		numeros[numero_cortes_webos + 1] = longitud_palote;
 
@@ -376,9 +343,7 @@ static inline void corta_palos_main() {
 		tipo_dato chosto = corta_palos_core(numeros, numero_cortes_webos + 2);
 		printf("The minimum cutting is %u.\n", chosto);
 
-		scanf("%u\n", &longitud_palote);
 	}
-
 }
 
 int main(void) {
