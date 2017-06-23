@@ -71,12 +71,16 @@ def corta_palos_main():
         idx_linea += 1
         num_cacas = int(lineas[idx_linea].strip())
         idx_linea += 1
-        rajadas = [int(x) for x in lineas[idx_linea].strip().split(" ")]
+#        rajadas = [int(x) for x in lineas[idx_linea].strip().split(" ")]
+        rajadas=[]
+        for caca in lineas[idx_linea].strip().split(" "):
+            if(caca and caca.isdigit()):
+                rajadas.append(int(caca))
         idx_linea += 1
+
         logger_cagada.debug("mierda %s %s" % (num_cacas, rajadas))
         ass = corta_palos_core([0] + rajadas + [tam_palote])
         print("The minimum cutting is %u." % ass)
-        
 #     tam_palote=100
 #     rajadas=[25,50,75]
 
